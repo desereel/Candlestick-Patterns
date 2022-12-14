@@ -54,7 +54,7 @@ def plot_candles(pricing, title=None, volume_bars=False, color_function=None, te
 	if frequency == 'minute':
 		time_format = '%H:%M'
     # Set X axis tick labels.
-    #plt.xticks(x, [date.strftime(time_format) for date in pricing.index], rotation='vertical')
+	plt.xticks(x, [date.strftime(time_format) for date in pricing.index], rotation='vertical')
 	for indicator in technicals:
 		ax1.plot(x, indicator)
     
@@ -72,10 +72,37 @@ def plot_candles(pricing, title=None, volume_bars=False, color_function=None, te
 		volume_title = 'Volume'
 		if volume_scale:
 			volume_title = 'Volume (%s)' % volume_scale
-        #ax2.set_title(volume_title)
+		ax2.set_title(volume_title)
 		ax2.xaxis.grid(True)
 		ax2.set_yticklabels([])
 		ax2.set_xticklabels([])
 	return fig    
 
-print(ticker_data('INFY', date(2018,1,1), date(2020,9,1)))
+ticker = ticker_data('INFY', date(2018,1,1), date(2020,9,1))
+df = ticker.copy()
+df = df.reset_index(drop=True)
+n_days = 5
+fraction_movement=0.037
+df['Trend'] = None
+for i in range(len(df)):
+	try:
+		for n in range(n_days):
+			if df.loc[i, 'close_price'] - df.loc[i+n,'close_price'] >= fraction_movement*df.loc[i,'close_price']:
+				df.loc[i,'Trend'] ='Down'
+				if i >= 20:
+					fig=plot_candles(df_pricing[i-20:i],volume_bars=True)
+					fig.savefig('Candle Data/Down/{0}{1}.png'.format(df_pricing['Symbol'][i],i),dpi=70)
+				print('Down', i, n)
+				break
+			elif df.loc[i+n,'close_price'] - df.loc[i,'close_price'] >= fraction_movement*df.loc[i,'close_price'] :
+				df.loc[i,'Trend']='Up'
+				if i > 20:
+					fig=plot_candles(df_pricing[i-20:i],volume_bars=True)
+					fig.savefig('Candle Data/Up/{0}{1}.png'.format(df_pricing['Symbol'][i],i),dpi=70)
+				print('Up',i,n)
+				break
+			else:
+				df.loc[i,'Trend']= 'No Trend'
+	except:
+		print(i)
+		pass
